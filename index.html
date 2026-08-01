@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>La Colmena — 48 Leyes del Poder & El Arte de la Guerra</title>
+<meta name="description" content="Panal interactivo con las 48 Leyes del Poder de Robert Greene y los principios de El Arte de la Guerra de Sun Tzu." />
+<style>
+  html, body { margin: 0; padding: 0; background: #08090C; }
+  #root { min-height: 100vh; }
+</style>
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" data-presets="react">
+const { useState, useRef, useEffect, useCallback } = React;
+
+/* ------------------------------------------------------------------ */
+/* DATA — 48 Leyes del Poder (Robert Greene) + 13 conceptos de         */
+/* El Arte de la Guerra (Sun Tzu). Títulos y resúmenes en palabras     */
+/* propias, no son citas textuales de los libros.                     */
+/* ------------------------------------------------------------------ */
+
+const LEYES = [
+  ["Nunca eclipses a tu maestro", "Quien brilla más que su superior despierta inseguridad, no gratitud.", "En el trabajo: haz brillar a tu jefe en público y guarda tu ambición para el momento correcto."],
+  ["No confíes ciegamente en los amigos, aprende de los rivales", "Un amigo puede traicionar por envidia; un antiguo rival, ya probado, suele ser más leal.", "Contrata por competencia demostrada, no solo por simpatía. La lealtad se verifica, no se asume."],
+  ["Oculta tus intenciones", "Si nadie sabe lo que planeas, nadie puede bloquearlo a tiempo.", "No anuncies tu próxima jugada en una negociación; deja que el resultado hable primero."],
+  ["Di siempre menos de lo necesario", "Cuanto más hablas, más ordinario y controlable pareces.", "En reuniones, una intervención breve y precisa pesa más que un monólogo nervioso."],
+  ["Cuida tu reputación como tu bien más valioso", "La reputación es la moneda que abre o cierra todas las puertas.", "Protege tu marca personal online: un desliz público tarda años en repararse."],
+  ["Haz lo necesario para ser notado", "Pasar desapercibido te condena a ser ignorado, aunque tengas mérito.", "Comunica tus logros con seguridad; nadie promociona lo que no ve."],
+  ["Deja que otros trabajen y quédate con el crédito con inteligencia", "Usar la experiencia ajena multiplica tu esfuerzo, no lo sustituye.", "Delegar bien y dar crédito real a tu equipo construye poder duradero, no solo apariencia."],
+  ["Haz que vengan a ti", "Quien espera con paciencia negocia desde una posición más fuerte que quien persigue.", "En ventas y negociación, generar demanda vale más que perseguir al cliente."],
+  ["Vence con hechos, no con discusiones", "Un argumento ganado en palabras deja resentimiento; un resultado demostrado convence solo.", "Muestra datos y resultados en vez de discutir opiniones en una reunión."],
+  ["Evita el contagio de la negatividad crónica", "El desánimo y el victimismo se transmiten como una infección social.", "Cuida tu entorno: rodéate de personas que suman energía, no que la drenan."],
+  ["Haz que otros dependan de ti", "La dependencia genera seguridad para quien la controla, no para quien depende.", "Vuélvete indispensable por tu conocimiento único, no reemplazable por tareas genéricas."],
+  ["Usa la honestidad selectiva para generar confianza", "Un gesto sincero, bien colocado, abre puertas que cien promesas no abren.", "Admitir un error pequeño con transparencia genera más confianza que aparentar perfección."],
+  ["Apela al interés propio, no a la compasión, al pedir ayuda", "La gente actúa por beneficio propio con más constancia que por lástima.", "Al pedir apoyo, muestra qué gana la otra persona, no solo tu necesidad."],
+  ["Infórmate como si fueras un aliado cercano", "Conocer a fondo a otros es la mejor defensa y la mejor ventaja.", "Investiga bien a tu contraparte antes de una negociación importante."],
+  ["No dejes cabos sueltos con un adversario", "Un enemigo a medio vencer vuelve, y vuelve más motivado.", "Resuelve los conflictos hasta el final; los problemas aplazados regresan más grandes."],
+  ["Usa la ausencia para aumentar tu valor", "La presencia constante devalúa; la escasez calculada aumenta el deseo.", "No estés disponible todo el tiempo: la disponibilidad total reduce tu valor percibido."],
+  ["Cultiva cierta imprevisibilidad estratégica", "La rutina total te vuelve fácil de leer y de manipular.", "Ser algo impredecible en tu forma de actuar te da margen de maniobra."],
+  ["No te aísles por completo, la conexión también protege", "El aislamiento absoluto elimina aliados justo cuando más se necesitan.", "Mantén tu red de contactos activa; nadie triunfa completamente solo."],
+  ["Conoce con quién tratas antes de actuar", "Ofender a la persona equivocada por ignorancia cuesta más que cualquier cálculo.", "Investiga la sensibilidad y el estilo de la otra parte antes de confrontar."],
+  ["No te comprometas con bandos de forma permanente", "Atarte a un solo bando te resta libertad de maniobra futura.", "Mantén relaciones profesionales con distintos grupos sin depender de uno solo."],
+  ["No subestimes ni sobreactúes tu propia inteligencia", "Aparentar más ingenuidad de la que tienes desarma la vigilancia ajena.", "A veces conviene escuchar más de lo que opinas para leer mejor una situación."],
+  ["Convierte una posición débil en ventaja mediante la rendición táctica", "Ceder a tiempo puede ser más poderoso que resistir hasta el colapso.", "Aceptar un revés menor a tiempo evita perder toda la negociación."],
+  ["Concentra tus fuerzas en un solo punto", "La energía dispersa en muchos frentes rinde poco en todos ellos.", "Enfoca tus recursos en tu proyecto prioritario en vez de dispersarlos en diez."],
+  ["Domina el arte de moverte con elegancia dentro de cualquier sistema", "Entender las reglas no escritas de un entorno es tan importante como su plan explícito.", "Aprende la cultura interna de tu empresa antes de intentar cambiarla."],
+  ["Reinvéntate cuando el contexto lo exige", "Una identidad rígida se vuelve obsoleta cuando cambian las circunstancias.", "Actualiza tu perfil profesional y tus habilidades conforme cambia tu industria."],
+  ["Mantén las manos limpias ante los ojos públicos", "Que otros hagan el trabajo sucio protege tu imagen a largo plazo.", "Delega decisiones impopulares a procesos claros, no a tu criterio personal visible."],
+  ["Sé cauto con el fervor colectivo ciego", "La necesidad humana de creer puede ser guiada, para bien o para mal.", "Cuestiona las modas de oficina antes de sumarte a ellas sin criterio propio."],
+  ["Actúa con audacia calculada", "La duda visible invita a que otros ocupen el espacio que dejaste vacío.", "Presenta tus propuestas con convicción; la indecisión visible resta credibilidad."],
+  ["Planifica considerando el final, no solo el inicio", "Un buen comienzo sin plan de cierre termina en caos.", "Antes de lanzar un proyecto, define cómo sabrás que ha terminado bien."],
+  ["Haz que tu esfuerzo parezca fluido", "El esfuerzo visible en exceso puede parecer torpe en vez de admirable.", "Prepárate a fondo en privado para que en público parezca sencillo."],
+  ["Ofrece opciones limitadas y bien diseñadas", "Quien diseña las opciones controla la decisión final del otro.", "Al proponer, da 2-3 alternativas ya filtradas en vez de un menú abierto."],
+  ["Apela a la imaginación más que a la lógica fría", "Las historias y símbolos mueven más voluntades que las estadísticas.", "Una buena narrativa vende una idea mejor que una lista de datos."],
+  ["Identifica el punto sensible de cada persona", "Cada persona tiene una motivación oculta que explica su comportamiento.", "Entender qué le importa realmente a un colega mejora cualquier negociación con él."],
+  ["Proyecta autoridad con tu propio estilo", "La forma en que te presentas condiciona cómo te tratan los demás.", "Vestir y hablar con seguridad cambia cómo te perciben en una sala."],
+  ["Domina el arte del momento oportuno", "La misma acción, en distinto momento, tiene resultados opuestos.", "Espera el momento adecuado para pedir un aumento, no solo el momento que te urge."],
+  ["No pelees por lo que no puedes tener", "Desear en voz alta lo inalcanzable te resta poder frente a los demás.", "Deja ir con dignidad las oportunidades que ya se cerraron."],
+  ["Crea momentos memorables y visibles", "Los gestos sorprendentes se recuerdan más que los logros silenciosos.", "Presenta tus resultados de forma memorable, no solo correcta."],
+  ["Adapta tu comportamiento externo aunque pienses distinto", "Ir siempre a contracorriente en la forma aísla, aunque tengas razón en el fondo.", "Puedes disentir en privado y aun así cooperar con las formas del grupo."],
+  ["A veces conviene generar movimiento para ver con claridad", "La calma aparente puede ocultar información que solo emerge con un poco de presión.", "Una pregunta incómoda bien colocada revela lo que nadie decía abiertamente."],
+  ["Sospecha de lo que parece gratuito", "Todo regalo o favor inesperado suele tener una condición implícita.", "Revisa la letra pequeña de cualquier oferta demasiado generosa antes de aceptar."],
+  ["No busques igualar al gran referente, encuentra tu propio camino", "Competir de frente contra quien ya domina un terreno rara vez funciona.", "En vez de copiar al líder del sector, busca un nicho donde tú lideres."],
+  ["Atiende primero a quien sostiene al grupo", "Quitar el punto de apoyo desarma a todo el conjunto.", "En un proyecto en crisis, identifica a la persona clave de la que depende el resto."],
+  ["Influye en las emociones antes que en los argumentos", "Las decisiones se sienten primero y se justifican después con lógica.", "Antes de convencer con datos, asegúrate de que la otra persona se sienta escuchada."],
+  ["Usa el espejo para desarmar sin confrontar", "Reflejar el comportamiento de alguien lo hace ver su propio patrón sin acusarlo.", "Repetir con calma lo que el otro acaba de decir puede bajar la tensión de una discusión."],
+  ["Impulsa el cambio de forma gradual, no de golpe", "Un cambio demasiado brusco genera resistencia aunque sea, en el fondo, necesario.", "Introduce nuevas ideas paso a paso en un equipo acostumbrado a lo antiguo."],
+  ["No aparentes ser perfecto", "La perfección aparente incomoda y despierta envidia o desconfianza.", "Mostrar algún defecto pequeño y humano te hace más cercano y creíble."],
+  ["No te excedas más allá del objetivo logrado", "Ir más allá de la meta alcanzada puede convertir una victoria en un error.", "Al conseguir lo que buscabas, detente antes de arriesgarlo todo por más."],
+  ["Cultiva la capacidad de adaptarte sin forma fija", "Ser predecible en la forma te vuelve vulnerable ante quien sí se adapta.", "Mantén varias formas de resolver un mismo problema; no dependas de una sola fórmula."],
+];
+
+const ARTE = [
+  ["El cálculo previo", "Antes de cualquier conflicto, Sun Tzu insiste en evaluar con honestidad las condiciones propias y ajenas.", "Antes de lanzar un proyecto, haz un diagnóstico realista de recursos, tiempo y competencia."],
+  ["El costo real de un conflicto prolongado", "Una guerra larga desgasta incluso al bando que la va ganando.", "Evita conflictos internos que se alargan sin resolución: consumen más de lo que aparentan."],
+  ["Ganar sin combatir", "La victoria más elegante es la que se logra sin necesidad de destruir al oponente.", "Resolver un conflicto por acuerdo es más valioso que ganarlo por desgaste."],
+  ["La disposición de las fuerzas", "Un buen estratega se organiza de forma que la victoria parezca inevitable antes de empezar.", "Organiza tu equipo y tus recursos antes de anunciar un objetivo ambicioso."],
+  ["El potencial acumulado", "La energía bien coordinada de un grupo pesa más que el talento individual disperso.", "Un equipo bien sincronizado supera a un grupo de estrellas individuales descoordinadas."],
+  ["Puntos débiles y fuertes", "Atacar donde el rival es fuerte desgasta; atacar donde es débil decide.", "Enfoca tu propuesta de valor en lo que la competencia hace peor, no en igualar lo que hace bien."],
+  ["Maniobra directa e indirecta", "Lo esperado fija al rival; lo inesperado lo derrota.", "Combina el enfoque convencional con un giro creativo que nadie anticipe."],
+  ["Las variables según el contexto", "Ninguna regla fija sirve igual en todas las situaciones; la sabiduría está en adaptarla.", "No apliques la misma estrategia de siempre a un problema realmente nuevo."],
+  ["La lectura del entorno", "Los pequeños signos del entorno revelan las intenciones antes que las palabras.", "Aprende a leer el ambiente de una reunión antes de hablar tú primero."],
+  ["Los tipos de terreno", "El lugar donde ocurre el conflicto determina buena parte de quién tiene ventaja.", "Elige el contexto de una negociación difícil: el lugar y el momento ya inclinan la balanza."],
+  ["Las variantes del terreno estratégico", "Cada tipo de situación exige una postura distinta, ni siempre agresiva ni siempre pasiva.", "En una crisis, evalúa si conviene actuar rápido o esperar según el terreno real del problema."],
+  ["El ataque indirecto", "A veces el golpe más efectivo no es frontal sino sobre lo que sostiene al rival.", "En una negociación estancada, cambia el punto de presión en vez de insistir en el mismo."],
+  ["El valor de la información", "Sun Tzu dedica su capítulo final a la inteligencia: saber antes que el otro sepa que sabes.", "Antes de decidir, invierte tiempo en informarte bien; la información buena vale más que la acción rápida."],
+];
+
+const items = [
+  ...LEYES.map(([t, d, m], i) => ({ id: i + 1, book: "leyes", title: t, desc: d, modern: m })),
+  ...ARTE.map(([t, d, m], i) => ({ id: LEYES.length + i + 1, book: "arte", title: t, desc: d, modern: m })),
+];
+
+const PALETTE = [
+  "#7A2331", "#2B3A67", "#4A5A3A", "#6B3A52",
+  "#1F4B4B", "#5C4425", "#3D2645", "#274156",
+  "#5A2A27", "#3A4A2B", "#4B2E39", "#1E3A2F",
+];
+
+function randomColor() {
+  return PALETTE[Math.floor(Math.random() * PALETTE.length)];
+}
+
+const MAX_ROW_COLS = 8;
+
+function computeHexWidth() {
+  if (typeof window === "undefined") return 108;
+  const viewportW = window.innerWidth;
+  const available = Math.min(920, viewportW - 24);
+  // +0.5 column reserves room for the half-hex offset on alternating rows
+  const w = available / (MAX_ROW_COLS + 0.5);
+  return Math.max(46, Math.min(108, w));
+}
+
+function ColmenaEstrategica() {
+  const [selected, setSelected] = useState(null); // { item, rect, phase, flipped, color }
+  const [hexW, setHexW] = useState(computeHexWidth);
+  const refs = useRef({});
+
+  useEffect(() => {
+    function onResize() {
+      setHexW(computeHexWidth());
+    }
+    window.addEventListener("resize", onResize);
+    window.addEventListener("orientationchange", onResize);
+    return () => {
+      window.removeEventListener("resize", onResize);
+      window.removeEventListener("orientationchange", onResize);
+    };
+  }, []);
+
+  const HEX_H = Math.round(hexW * 1.1547);
+
+  const openHex = useCallback((item) => {
+    const el = refs.current[item.id];
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    setSelected({ item, rect, phase: "start", flipped: false, color: randomColor() });
+  }, []);
+
+  useEffect(() => {
+    if (selected && selected.phase === "start") {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          setSelected((s) => (s ? { ...s, phase: "expanded", flipped: true } : s));
+        });
+      });
+    }
+  }, [selected && selected.phase]);
+
+  const closeHex = useCallback(() => {
+    setSelected((s) => (s ? { ...s, phase: "closing", flipped: false } : s));
+    setTimeout(() => setSelected(null), 650);
+  }, []);
+
+  useEffect(() => {
+    function onKey(e) {
+      if (e.key === "Escape" && selected) closeHex();
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [selected, closeHex]);
+
+  // build honeycomb rows
+  const rows = [];
+  let cursor = 0;
+  const rowSizes = [];
+  {
+    let idx = 0;
+    let toggle = false;
+    while (idx < items.length) {
+      const size = toggle ? 7 : 8;
+      rowSizes.push(Math.min(size, items.length - idx));
+      idx += size;
+      toggle = !toggle;
+    }
+  }
+  rowSizes.forEach((size, rIdx) => {
+    rows.push(items.slice(cursor, cursor + size));
+    cursor += size;
+  });
+
+  const overlayStyle = (() => {
+    if (!selected) return null;
+    const isExpanded = selected.phase === "expanded";
+    const r = selected.rect;
+    return {
+      position: "fixed",
+      top: isExpanded ? 0 : r.top,
+      left: isExpanded ? 0 : r.left,
+      width: isExpanded ? "100vw" : r.width,
+      height: isExpanded ? "100vh" : r.height,
+      clipPath: isExpanded
+        ? "polygon(0% 0%,100% 0%,100% 100%,0% 100%)"
+        : "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)",
+      transition:
+        "top 0.65s cubic-bezier(.65,0,.35,1), left 0.65s cubic-bezier(.65,0,.35,1), width 0.65s cubic-bezier(.65,0,.35,1), height 0.65s cubic-bezier(.65,0,.35,1), clip-path 0.65s cubic-bezier(.65,0,.35,1)",
+      zIndex: 100,
+      perspective: 1600,
+    };
+  })();
+
+  return (
+    <div style={styles.page}>
+      <style>{fontImport}</style>
+      <header style={styles.header}>
+        <div style={styles.kicker}>ESTRATEGIA · PODER · GUERRA</div>
+        <h1 style={styles.h1}>La Colmena</h1>
+        <p style={styles.sub}>
+          61 celdas. 48 leyes del poder, 13 principios del Arte de la Guerra.
+          Toca una celda para abrirla.
+        </p>
+      </header>
+
+      <div style={styles.hive}>
+        {rows.map((row, rIdx) => (
+          <div
+            key={rIdx}
+            style={{
+              display: "flex",
+              marginTop: rIdx === 0 ? 0 : -HEX_H * 0.25,
+              marginLeft: rIdx % 2 === 1 ? hexW / 2 + 4 : 0,
+            }}
+          >
+            {row.map((item) => (
+              <div
+                key={item.id}
+                ref={(el) => (refs.current[item.id] = el)}
+                onClick={() => openHex(item)}
+                className="hex-cell"
+                style={{
+                  ...styles.hex,
+                  width: hexW,
+                  height: HEX_H,
+                  margin: `0 ${Math.max(2, hexW * 0.03)}px`,
+                  visibility:
+                    selected && selected.item.id === item.id && selected.phase !== "closing"
+                      ? "hidden"
+                      : "visible",
+                  background: item.book === "leyes" ? "#161A22" : "#1D1712",
+                  borderColor: item.book === "leyes" ? "#3A4A6B33" : "#7A233133",
+                }}
+              >
+                <span style={{ ...styles.hexNum, fontSize: Math.max(12, hexW * 0.17) }}>
+                  {String(item.id).padStart(2, "0")}
+                </span>
+                <span style={styles.hexDot(item.book)} />
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+
+      <div style={styles.legend}>
+        <span style={styles.legendItem}>
+          <i style={{ ...styles.legendDot, background: "#5B7FD9" }} /> 48 Leyes del Poder
+        </span>
+        <span style={styles.legendItem}>
+          <i style={{ ...styles.legendDot, background: "#C0524B" }} /> El Arte de la Guerra
+        </span>
+      </div>
+
+      {selected && (
+        <>
+          <div
+            onClick={closeHex}
+            style={{
+              ...styles.backdrop,
+              opacity: selected.phase === "expanded" ? 1 : 0,
+              pointerEvents: selected.phase === "expanded" ? "auto" : "none",
+            }}
+          />
+          <div style={overlayStyle}>
+            <div
+              className="flipper"
+              style={{
+                width: "100%",
+                height: "100%",
+                position: "relative",
+                transformStyle: "preserve-3d",
+                transition: "transform 0.65s cubic-bezier(.65,0,.35,1)",
+                transform: `rotateY(${selected.flipped ? 180 : 0}deg)`,
+              }}
+            >
+              {/* FRONT */}
+              <div
+                style={{
+                  ...styles.face,
+                  background: selected.item.book === "leyes" ? "#161A22" : "#1D1712",
+                }}
+              >
+                <span
+                  style={{
+                    ...styles.hexNum,
+                    fontSize: selected.phase === "expanded" ? 0 : Math.max(12, hexW * 0.17),
+                  }}
+                >
+                  {String(selected.item.id).padStart(2, "0")}
+                </span>
+              </div>
+
+              {/* BACK */}
+              <div
+                style={{
+                  ...styles.face,
+                  transform: "rotateY(180deg)",
+                  background: selected.color,
+                  overflowY: "auto",
+                }}
+              >
+                {selected.phase === "expanded" && (
+                  <div style={styles.cardContent}>
+                    <button style={styles.closeBtn} onClick={closeHex} aria-label="Cerrar">
+                      ✕
+                    </button>
+                    <div style={styles.cardBadge}>
+                      {selected.item.book === "leyes" ? "Las 48 Leyes del Poder" : "El Arte de la Guerra"}
+                      <span style={styles.cardBadgeNum}>№ {String(selected.item.id).padStart(2, "0")}</span>
+                    </div>
+                    <h2 style={styles.cardTitle}>{selected.item.title}</h2>
+                    <p style={styles.cardDesc}>{selected.item.desc}</p>
+                    <div style={styles.cardModernLabel}>Vigencia hoy</div>
+                    <p style={styles.cardModern}>{selected.item.modern}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+const fontImport = `
+  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap');
+  .hex-cell { transition: transform 0.25s ease, filter 0.25s ease; cursor: pointer; }
+  .hex-cell:hover { transform: scale(1.08); filter: brightness(1.35); z-index: 5; }
+  .hex-cell:focus-visible { outline: 2px solid #C9A24B; outline-offset: 2px; }
+  @media (prefers-reduced-motion: reduce) {
+    .hex-cell, .flipper, .hex-cell * { transition: none !important; }
+  }
+`;
+
+const styles = {
+  page: {
+    minHeight: "100vh",
+    background: "radial-gradient(ellipse at top, #12151C 0%, #0A0B0F 60%, #08090C 100%)",
+    color: "#E8E3D3",
+    fontFamily: "'Inter', sans-serif",
+    padding: "48px 16px 80px",
+    boxSizing: "border-box",
+    overflowX: "hidden",
+  },
+  header: { textAlign: "center", maxWidth: 560, margin: "0 auto 40px" },
+  kicker: {
+    fontFamily: "'JetBrains Mono', monospace",
+    fontSize: 11,
+    letterSpacing: 3,
+    color: "#C9A24B",
+    marginBottom: 10,
+  },
+  h1: {
+    fontFamily: "'Cormorant Garamond', serif",
+    fontWeight: 700,
+    fontSize: "clamp(40px, 8vw, 64px)",
+    margin: "0 0 12px",
+    color: "#F3EEDD",
+    letterSpacing: 0.5,
+  },
+  sub: { color: "#A9A48F", fontSize: 15, lineHeight: 1.6, margin: 0 },
+  hive: {
+    maxWidth: 920,
+    margin: "0 auto",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "flex-start",
+  },
+  hex: {
+    flexShrink: 0,
+    margin: "0 3px",
+    clipPath: "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)",
+    border: "1px solid",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    position: "relative",
+  },
+  hexNum: {
+    fontFamily: "'JetBrains Mono', monospace",
+    color: "#8A8672",
+    fontSize: 18,
+    fontWeight: 500,
+  },
+  hexDot: (book) => ({
+    position: "absolute",
+    bottom: 18,
+    width: 5,
+    height: 5,
+    borderRadius: "50%",
+    background: book === "leyes" ? "#5B7FD9" : "#C0524B",
+  }),
+  legend: {
+    display: "flex",
+    justifyContent: "center",
+    gap: 28,
+    marginTop: 36,
+    fontFamily: "'JetBrains Mono', monospace",
+    fontSize: 12,
+    color: "#A9A48F",
+  },
+  legendItem: { display: "flex", alignItems: "center", gap: 8 },
+  legendDot: { width: 8, height: 8, borderRadius: "50%", display: "inline-block" },
+  backdrop: {
+    position: "fixed",
+    inset: 0,
+    background: "rgba(5,6,8,0.75)",
+    zIndex: 90,
+    transition: "opacity 0.4s ease",
+  },
+  face: {
+    position: "absolute",
+    inset: 0,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    backfaceVisibility: "hidden",
+    WebkitBackfaceVisibility: "hidden",
+  },
+  cardContent: {
+    maxWidth: 640,
+    width: "100%",
+    padding: "0 32px",
+    boxSizing: "border-box",
+    animation: "none",
+  },
+  closeBtn: {
+    position: "absolute",
+    top: 28,
+    right: 32,
+    width: 40,
+    height: 40,
+    borderRadius: "50%",
+    border: "1px solid rgba(255,255,255,0.3)",
+    background: "rgba(0,0,0,0.2)",
+    color: "#F3EEDD",
+    fontSize: 16,
+    cursor: "pointer",
+  },
+  cardBadge: {
+    fontFamily: "'JetBrains Mono', monospace",
+    fontSize: 12,
+    letterSpacing: 1.5,
+    textTransform: "uppercase",
+    color: "rgba(243,238,221,0.75)",
+    display: "flex",
+    alignItems: "center",
+    gap: 14,
+    marginBottom: 18,
+  },
+  cardBadgeNum: {
+    padding: "3px 8px",
+    border: "1px solid rgba(255,255,255,0.35)",
+    borderRadius: 4,
+  },
+  cardTitle: {
+    fontFamily: "'Cormorant Garamond', serif",
+    fontWeight: 700,
+    fontSize: "clamp(30px, 5vw, 46px)",
+    lineHeight: 1.1,
+    margin: "0 0 22px",
+    color: "#FFFCF4",
+  },
+  cardDesc: {
+    fontSize: 17,
+    lineHeight: 1.65,
+    color: "rgba(255,252,244,0.92)",
+    margin: "0 0 28px",
+  },
+  cardModernLabel: {
+    fontFamily: "'JetBrains Mono', monospace",
+    fontSize: 11,
+    letterSpacing: 2,
+    textTransform: "uppercase",
+    color: "rgba(243,238,221,0.6)",
+    marginBottom: 8,
+  },
+  cardModern: {
+    fontSize: 16,
+    lineHeight: 1.6,
+    color: "rgba(255,252,244,0.85)",
+    fontStyle: "italic",
+    margin: 0,
+    borderLeft: "2px solid rgba(255,255,255,0.35)",
+    paddingLeft: 16,
+  },
+};
+
+const root = ReactDOM.createRoot(document.getElementById("root"));
+root.render(<ColmenaEstrategica />);
+</script>
+</body>
+</html>
