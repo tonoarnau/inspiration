@@ -6,7 +6,7 @@
 <title>La Colmena — 48 Leyes del Poder & El Arte de la Guerra</title>
 <meta name="description" content="Panal interactivo con las 48 Leyes del Poder de Robert Greene y los principios de El Arte de la Guerra de Sun Tzu." />
 <style>
-  html, body { margin: 0; padding: 0; background: #08090C; }
+  html, body { margin: 0; padding: 0; background: #08090C; overflow-x: hidden; }
   #root { min-height: 100vh; }
 </style>
 <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
@@ -107,14 +107,16 @@ function randomColor() {
 }
 
 const MAX_ROW_COLS = 8;
+const HEX_GAP = 3; // fixed px gap between hexes in a row — must match render
+const PAGE_PADDING_X = 12; // must match styles.page horizontal padding
 
 function computeHexWidth() {
   if (typeof window === "undefined") return 108;
   const viewportW = window.innerWidth;
-  const available = Math.min(920, viewportW - 24);
-  // +0.5 column reserves room for the half-hex offset on alternating rows
-  const w = available / (MAX_ROW_COLS + 0.5);
-  return Math.max(46, Math.min(108, w));
+  const containerW = Math.min(920, viewportW - PAGE_PADDING_X * 2 - 4);
+  // A full row has MAX_ROW_COLS hexes and (MAX_ROW_COLS - 1) gaps between them.
+  const w = (containerW - (MAX_ROW_COLS - 1) * HEX_GAP) / MAX_ROW_COLS;
+  return Math.max(30, Math.min(108, w));
 }
 
 function ColmenaEstrategica() {
@@ -223,8 +225,9 @@ function ColmenaEstrategica() {
             key={rIdx}
             style={{
               display: "flex",
+              gap: HEX_GAP,
               marginTop: rIdx === 0 ? 0 : -HEX_H * 0.25,
-              marginLeft: rIdx % 2 === 1 ? hexW / 2 + 4 : 0,
+              marginLeft: rIdx % 2 === 1 ? (hexW + HEX_GAP) / 2 : 0,
             }}
           >
             {row.map((item) => (
@@ -237,7 +240,6 @@ function ColmenaEstrategica() {
                   ...styles.hex,
                   width: hexW,
                   height: HEX_H,
-                  margin: `0 ${Math.max(2, hexW * 0.03)}px`,
                   visibility:
                     selected && selected.item.id === item.id && selected.phase !== "closing"
                       ? "hidden"
@@ -353,7 +355,7 @@ const styles = {
     background: "radial-gradient(ellipse at top, #12151C 0%, #0A0B0F 60%, #08090C 100%)",
     color: "#E8E3D3",
     fontFamily: "'Inter', sans-serif",
-    padding: "48px 16px 80px",
+    padding: "48px 12px 80px",
     boxSizing: "border-box",
     overflowX: "hidden",
   },
@@ -383,7 +385,7 @@ const styles = {
   },
   hex: {
     flexShrink: 0,
-    margin: "0 3px",
+    boxSizing: "border-box",
     clipPath: "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)",
     border: "1px solid",
     display: "flex",
